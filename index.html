@@ -3402,14 +3402,14 @@
 
             // Desktop vs Mobile configuration
             const config = performanceTier === 'MOBILE' ? {
-                starsCount: 400,           // -90% from 4000
-                inflowCount: 15,           // -90% from 150
-                ringCount: 8,              // -68% from 25
+                starsCount: 100,           // NUCLEAR: -97.5% from 4000
+                inflowCount: 0,            // NUCLEAR: Disabled on mobile
+                ringCount: 5,              // NUCLEAR: -80% from 25
                 ringSegments: 16,          // -75% from 64
                 sphereSegments: 16,        // -75% from 64
                 pixelRatio: 1.0,           // -50% from 2.0
                 antialias: false,          // GPU saver
-                particleSize: 0.5          // Larger = fewer needed
+                particleSize: 0.8          // Larger = fewer needed
             } : {
                 starsCount: 4000,
                 inflowCount: 150,
@@ -3768,6 +3768,9 @@
         document.addEventListener('touchstart', (e) => {
             touchStartY = e.touches[0].clientY;
             touchStartTime = Date.now();
+            // Instant speed lines feedback on touch
+            const speedLines = document.getElementById('speedLines');
+            if (speedLines) speedLines.classList.add('active');
         }, { passive: true });
 
         document.addEventListener('touchmove', (e) => {
@@ -3798,8 +3801,8 @@
                 scrollHint.classList.add('hidden');
             }
 
-            // Update depth
-            targetDepth = Math.max(0, Math.min(maxDepth, targetDepth + deltaY * 0.5));
+            // Update depth - HYPER SENSITIVITY for mobile (5x multiplier)
+            targetDepth = Math.max(0, Math.min(maxDepth, targetDepth + deltaY * 5.0));
             touchStartY = touchY;
 
             // Update HUD
@@ -3814,7 +3817,7 @@
             if (touchDuration < 150) {
                 const lastTouch = e.changedTouches[0];
                 const velocity = (touchStartY - lastTouch.clientY) / touchDuration;
-                targetDepth = Math.max(0, Math.min(maxDepth, targetDepth + velocity * 80));
+                targetDepth = Math.max(0, Math.min(maxDepth, targetDepth + velocity * 800));
             }
         }, { passive: true });
 
