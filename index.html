@@ -1515,6 +1515,162 @@
                 scrollbar-width: none;
             }
         }
+
+        /* ============================================= */
+        /* MOBILE PERFORMANCE MODE - RUTHLESS EFFICIENCY */
+        /* ============================================= */
+        /* State B: Targets stable 60 FPS on mobile devices */
+
+        @media (max-width: 768px),
+        (hover: none) and (pointer: coarse) {
+
+            /* CRITICAL: Kill backdrop-filter blur - GPU destroyer */
+            .glass-card {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                background: rgba(15, 15, 15, 0.95) !important;
+                border-color: rgba(255, 255, 255, 0.1) !important;
+            }
+
+            .nav-blur {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                background: rgba(5, 5, 5, 0.98) !important;
+            }
+
+            /* Kill expensive text shadows and filters */
+            .hero-text-main {
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
+                -webkit-text-stroke: none !important;
+                filter: none !important;
+            }
+
+            .hero-text-main.text-silver-gradient {
+                animation: none !important;
+                background: #ffffff !important;
+                -webkit-background-clip: text !important;
+                -webkit-text-fill-color: transparent !important;
+                filter: none !important;
+            }
+
+            /* Disable ALL shimmer/gradient animations */
+            .hud-section h2,
+            .text-silver-gradient,
+            hr,
+            .h-px {
+                animation: none !important;
+            }
+
+            /* Kill floating animations - save CPU cycles */
+            #formation .grid>div,
+            #history .grid>div {
+                animation: none !important;
+            }
+
+            /* Disable glitch effects entirely */
+            .glitch-text::before,
+            .glitch-text::after {
+                display: none !important;
+            }
+
+            /* Simplify hero backdrop */
+            #hero .hud-content>div::before {
+                display: none !important;
+            }
+
+            /* Reduce vignette complexity */
+            .tunnel-vignette {
+                background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.6) 100%) !important;
+            }
+
+            /* Hide speed lines - pure visual fluff */
+            .speed-lines {
+                display: none !important;
+            }
+
+            /* Simplify data bars */
+            .data-bar-fill::after {
+                display: none !important;
+            }
+
+            /* Kill watermarks - invisible anyway on mobile */
+            .watermark-huge {
+                display: none !important;
+            }
+
+            /* Reduce hero button pulse intensity */
+            #hero-buttons>div {
+                animation: none !important;
+            }
+
+            /* Simplify equation boxes */
+            .equation-box {
+                box-shadow: none !important;
+            }
+
+            /* Kill card spotlight/tilt effects */
+            .glass-card::before {
+                display: none !important;
+            }
+
+            /* Reduce transition complexity */
+            .glass-card,
+            .timeline-card {
+                transition: none !important;
+            }
+
+            /* Kill accretion disk rotation in anatomy */
+            #anatomy .bg-black .rounded-full,
+            #anatomy .bg-black .border {
+                animation: none !important;
+            }
+
+            /* Disable pulse on status badges */
+            .animate-pulse {
+                animation: none !important;
+            }
+
+            /* Kill text flicker */
+            .text-xs.text-zinc-500.uppercase {
+                animation: none !important;
+            }
+
+            /* Simplify hero image rendering */
+            .hero-bg-image {
+                filter: none !important;
+            }
+
+            /* Reduce depth indicator complexity */
+            .depth-progress {
+                background: #ffffff !important;
+                transition: height 0.2s linear !important;
+            }
+
+            /* Simplify scroll hint */
+            .scroll-hint-arrow {
+                animation: none !important;
+            }
+        }
+
+        /* Ultra-aggressive mode for very low-end devices */
+        @media (max-width: 480px) {
+
+            /* Further reduce glass opacity for performance */
+            .glass-card {
+                background: rgba(10, 10, 10, 0.98) !important;
+            }
+
+            /* Hide hero background image entirely on very small screens */
+            .hero-bg-container {
+                opacity: 0.3 !important;
+            }
+
+            /* Simplify border animations */
+            .pulseBorder,
+            .borderDance {
+                animation: none !important;
+            }
+        }
     </style>
 </head>
 
@@ -3230,19 +3386,51 @@
         });
 
         if (tunnelContainer) {
-            // Mobile detection for performance
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            // ==========================================
+            // PERFORMANCE TIER DETECTION - DUAL-STATE ARCHITECTURE
+            // ==========================================
+            // State A (DESKTOP): Full cinematic luxury
+            // State B (MOBILE): Ruthless efficiency for 60 FPS
+            const performanceTier = (function () {
+                const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                const isSmallScreen = window.innerWidth < 768;
+                const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+                return (isMobileUA || isSmallScreen || isTouchDevice) ? 'MOBILE' : 'DESKTOP';
+            })();
+
+            console.log(`🎮 Performance Tier: ${performanceTier}`);
+
+            // Desktop vs Mobile configuration
+            const config = performanceTier === 'MOBILE' ? {
+                starsCount: 400,           // -90% from 4000
+                inflowCount: 15,           // -90% from 150
+                ringCount: 8,              // -68% from 25
+                ringSegments: 16,          // -75% from 64
+                sphereSegments: 16,        // -75% from 64
+                pixelRatio: 1.0,           // -50% from 2.0
+                antialias: false,          // GPU saver
+                particleSize: 0.5          // Larger = fewer needed
+            } : {
+                starsCount: 4000,
+                inflowCount: 150,
+                ringCount: 25,
+                ringSegments: 64,
+                sphereSegments: 64,
+                pixelRatio: Math.min(window.devicePixelRatio, 2),
+                antialias: true,
+                particleSize: 0.3
+            };
 
             tunnelScene = new THREE.Scene();
             tunnelCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-            tunnelRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: !isMobile });
+            tunnelRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: config.antialias });
             tunnelRenderer.setSize(window.innerWidth, window.innerHeight);
-            tunnelRenderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+            tunnelRenderer.setPixelRatio(config.pixelRatio);
             tunnelContainer.appendChild(tunnelRenderer.domElement);
 
-            // Create dense starfield
+            // Create starfield with config-driven count
             const starsGeometry = new THREE.BufferGeometry();
-            const starsCount = isMobile ? 2000 : 4000; // Reduced on mobile
+            const starsCount = config.starsCount;
             const posArray = new Float32Array(starsCount * 3);
             const velocityArray = new Float32Array(starsCount);
 
@@ -3259,7 +3447,7 @@
             starsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
             const starMaterial = new THREE.PointsMaterial({
-                size: 0.3,
+                size: config.particleSize,
                 color: 0xffffff,
                 transparent: true,
                 opacity: 0.9,
@@ -3272,8 +3460,8 @@
             // === CLEAN VORTEX TUNNEL ===
             // Fewer rings, unified orange-red color (like M87*)
             tunnelRings = new THREE.Group();
-            const ringCount = isMobile ? 15 : 25;
-            const ringSegments = isMobile ? 32 : 64;
+            const ringCount = config.ringCount;
+            const ringSegments = config.ringSegments;
             for (let i = 0; i < ringCount; i++) {
                 const progress = i / ringCount;
                 const baseRadius = 50 - progress * 35; // Funnel from 50 to 15
@@ -3302,7 +3490,7 @@
 
             // === INWARD-FLOWING PARTICLES (shows suction) ===
             const inflowGeometry = new THREE.BufferGeometry();
-            const inflowCount = isMobile ? 80 : 150;
+            const inflowCount = config.inflowCount;
             const inflowPositions = new Float32Array(inflowCount * 3);
             const inflowVelocities = new Float32Array(inflowCount); // Speed toward center
             const inflowAngles = new Float32Array(inflowCount); // Starting angle
@@ -3334,14 +3522,14 @@
 
             // === BLACK HOLE DESTINATION ===
             // Main black sphere
-            const bhGeometry = new THREE.SphereGeometry(20, 64, 64);
+            const bhGeometry = new THREE.SphereGeometry(20, config.sphereSegments, config.sphereSegments);
             const bhMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
             const blackHole = new THREE.Mesh(bhGeometry, bhMaterial);
             blackHole.position.z = -700;
             tunnelScene.add(blackHole);
 
             // === BRIGHT EVENT HORIZON (key focal point) ===
-            const horizonGeometry = new THREE.RingGeometry(21, 28, 64);
+            const horizonGeometry = new THREE.RingGeometry(21, 28, config.ringSegments);
             const horizonMaterial = new THREE.MeshBasicMaterial({
                 color: 0xffffff,
                 side: THREE.DoubleSide,
@@ -3353,7 +3541,7 @@
             tunnelScene.add(eventHorizonRing);
 
             // Outer glow halo
-            const haloGeometry = new THREE.RingGeometry(28, 60, 64);
+            const haloGeometry = new THREE.RingGeometry(28, 60, config.ringSegments);
             const haloMaterial = new THREE.MeshBasicMaterial({
                 color: 0xffffff,
                 side: THREE.DoubleSide,
@@ -3365,7 +3553,7 @@
             tunnelScene.add(haloRing);
 
             // Accretion disk (tilted for 3D effect)
-            const diskGeometry = new THREE.RingGeometry(25, 100, 64);
+            const diskGeometry = new THREE.RingGeometry(25, 100, config.ringSegments);
             const diskMaterial = new THREE.MeshBasicMaterial({
                 color: 0xcccccc,
                 side: THREE.DoubleSide,
