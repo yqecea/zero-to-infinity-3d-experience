@@ -1,0 +1,1628 @@
+:root {
+    --bg-deep: #050505;
+    --accent-silver: #d4d4d8;
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-bg: rgba(255, 255, 255, 0.02);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+/* CRITICAL: Disable normal scrolling for 3D fly-through */
+html,
+body {
+    background: var(--bg-deep);
+    color: #fff;
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-cinzel {
+    font-family: 'Cinzel', serif;
+}
+
+.font-mono {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* 3D Scene Container - Full viewport background */
+#tunnel-scene {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+}
+
+/* Vignette overlay for depth effect */
+.tunnel-vignette {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1;
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.8) 100%);
+}
+
+/* HUD Section Styles - Fixed overlay with fade transitions */
+.hud-section {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.hud-section.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.hud-section .hud-content {
+    flex: 1;
+    padding-top: 6rem;
+    padding-bottom: 4rem;
+}
+
+/* Depth Progress Indicator */
+.depth-indicator {
+    position: fixed;
+    right: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.depth-track {
+    width: 4px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+}
+
+.depth-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to top, #000, #a1a1aa, #fff);
+    border-radius: 2px;
+    transition: height 0.1s ease-out;
+}
+
+.depth-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+}
+
+/* Section Labels in depth indicator */
+.depth-markers {
+    position: absolute;
+    left: 12px;
+    top: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.depth-marker {
+    font-size: 0.5rem;
+    color: rgba(255, 255, 255, 0.3);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.depth-marker:hover {
+    color: white;
+}
+
+.depth-marker.active {
+    color: #ffffff;
+}
+
+/* Scroll Hint */
+.scroll-hint {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 1;
+    transition: opacity 0.5s;
+}
+
+.scroll-hint.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.scroll-hint-text {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.scroll-hint-arrow {
+    width: 24px;
+    height: 24px;
+    border-right: 2px solid rgba(255, 255, 255, 0.5);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+    transform: rotate(45deg);
+    animation: bounce-down 2s infinite;
+}
+
+@keyframes bounce-down {
+
+    0%,
+    100% {
+        transform: rotate(45deg) translateY(0);
+        opacity: 1;
+    }
+
+    50% {
+        transform: rotate(45deg) translateY(10px);
+        opacity: 0.5;
+    }
+}
+
+/* Speed Lines Effect */
+.speed-lines {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.3s;
+    background: repeating-linear-gradient(0deg,
+            transparent 0px,
+            transparent 50px,
+            rgba(255, 255, 255, 0.02) 50px,
+            rgba(255, 255, 255, 0.02) 51px);
+}
+
+.speed-lines.active {
+    opacity: 1;
+}
+
+/* Typography Utilities */
+.text-silver-gradient {
+    background: linear-gradient(to right, #ffffff, #e4e4e7, #a1a1aa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.text-justify-academic {
+    text-align: justify;
+    text-justify: inter-word;
+}
+
+/* Glass Card Enhanced */
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    --mouse-x: 50%;
+    --mouse-y: 50%;
+    --spotlight-size: 500px;
+}
+
+.glass-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Spotlight Effect */
+.glass-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: radial-gradient(var(--spotlight-size) circle at var(--mouse-x) var(--mouse-y), rgba(255, 255, 255, 0.06), transparent 40%);
+    opacity: 0;
+    transition: opacity 0.5s;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+}
+
+.glass-card:hover::before {
+    opacity: 1;
+}
+
+.glass-card>* {
+    position: relative;
+    z-index: 2;
+}
+
+/* Equation Box */
+.equation-box {
+    font-family: 'Times New Roman', serif;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+
+.equation-box::after {
+    content: "EQ";
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 0.5rem;
+    padding: 0.2rem 0.4rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: #888;
+}
+
+/* Horizontal Timeline - Now uses keyboard navigation */
+.horizontal-timeline-container {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2rem;
+    mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+
+.horizontal-timeline {
+    display: flex;
+    gap: 2rem;
+    width: max-content;
+    padding: 0 2rem;
+}
+
+.timeline-card {
+    min-width: 300px;
+    max-width: 300px;
+    flex-shrink: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    padding-top: 1rem;
+    position: relative;
+}
+
+.timeline-card::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: 0;
+    width: 6px;
+    height: 6px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 0 10px white;
+}
+
+/* Timeline Navigation Arrows */
+.timeline-nav {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.timeline-nav-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.timeline-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Dashboard Grid (Anatomy) */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 350px 1fr 350px;
+    }
+
+    .sticky-center {
+        position: relative;
+        height: auto;
+    }
+}
+
+/* Deep Dive Accordion */
+details.deep-dive {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+details.deep-dive[open] {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+details.deep-dive summary {
+    padding: 1rem;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    color: #a1a1aa;
+}
+
+details.deep-dive summary:hover {
+    color: white;
+}
+
+details.deep-dive summary::after {
+    content: '+';
+    font-size: 1.2rem;
+    font-weight: 300;
+    transition: transform 0.3s;
+}
+
+details.deep-dive[open] summary::after {
+    transform: rotate(45deg);
+}
+
+.deep-dive-content {
+    padding: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    color: #d4d4d8;
+    line-height: 1.8;
+    font-size: 0.95rem;
+}
+
+/* Hero Background - Seamless fullscreen with radial mask */
+.hero-bg-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.hero-bg-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    opacity: 0.85;
+    filter: saturate(1.1) contrast(1.05);
+    /* Tighter radial mask for seamless blend without over-scaling */
+    mask-image: radial-gradient(ellipse 70% 70% at center, black 40%, transparent 85%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 70% at center, black 40%, transparent 85%);
+}
+
+
+/* Data Viz Bars */
+.data-bar-container {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+}
+
+.data-bar-fill {
+    height: 100%;
+    background: white;
+    border-radius: 2px;
+    position: relative;
+}
+
+.data-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 10px;
+    background: linear-gradient(to right, transparent, white);
+    filter: blur(2px);
+}
+
+/* Nav Blur - Updated for fixed HUD */
+.nav-blur {
+    backdrop-filter: blur(12px);
+    background: rgba(5, 5, 5, 0.6);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+}
+
+/* 3D Canvas */
+#blackhole-canvas {
+    width: 100%;
+    height: 100%;
+}
+
+/* Animation Classes */
+.reveal-text {
+    clip-path: polygon(0 100%, 100% 100%, 100% 100%, 0% 100%);
+    transform: translateY(100%);
+    opacity: 0;
+    transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-text.revealed {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* Hero Title Styling - Maximum Contrast with Glow */
+.hero-title {
+    position: relative;
+    z-index: 10;
+}
+
+.hero-text-main {
+    color: #ffffff;
+    text-shadow:
+        0 0 20px rgba(0, 0, 0, 0.9),
+        0 0 40px rgba(0, 0, 0, 0.8),
+        0 0 60px rgba(0, 0, 0, 0.7),
+        0 2px 4px rgba(0, 0, 0, 1),
+        0 4px 8px rgba(0, 0, 0, 0.9),
+        0 8px 16px rgba(0, 0, 0, 0.8),
+        2px 2px 0 rgba(0, 0, 0, 0.5),
+        -2px -2px 0 rgba(0, 0, 0, 0.5);
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.3);
+    filter: drop-shadow(0 0 30px rgba(0, 0, 0, 0.9));
+}
+
+.hero-text-main.text-silver-gradient {
+    background: linear-gradient(135deg, #ffffff 0%, #e4e4e7 25%, #ffffff 50%, #a1a1aa 75%, #ffffff 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 4s linear infinite;
+    filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.9)) drop-shadow(0 4px 8px rgba(0, 0, 0, 1));
+}
+
+.hero-text-sub {
+    color: rgba(200, 200, 200, 0.9);
+    text-shadow:
+        0 0 15px rgba(0, 0, 0, 0.9),
+        0 0 30px rgba(0, 0, 0, 0.8),
+        0 2px 4px rgba(0, 0, 0, 1);
+}
+
+/* Hero section backdrop enhancement */
+#hero .hud-content>div {
+    position: relative;
+}
+
+#hero .hud-content>div::before {
+    content: '';
+    position: absolute;
+    inset: -50px;
+    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.4) 0%, transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Glitch Effect */
+.glitch-text {
+    position: relative;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #050505;
+}
+
+.glitch-text::before {
+    left: 2px;
+    text-shadow: -1px 0 #ff00c1;
+    clip: rect(44px, 450px, 56px, 0);
+    animation: glitch-anim-1 5s infinite linear alternate-reverse;
+}
+
+.glitch-text::after {
+    left: -2px;
+    text-shadow: -1px 0 #00fff9;
+    clip: rect(44px, 450px, 56px, 0);
+    animation: glitch-anim-2 5s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-anim-1 {
+    0% {
+        clip: rect(30px, 9999px, 10px, 0);
+    }
+
+    5% {
+        clip: rect(70px, 9999px, 90px, 0);
+    }
+
+    10% {
+        clip: rect(10px, 9999px, 30px, 0);
+    }
+
+    15% {
+        clip: rect(80px, 9999px, 20px, 0);
+    }
+
+    20% {
+        clip: rect(40px, 9999px, 60px, 0);
+    }
+
+    100% {
+        clip: rect(60px, 9999px, 5px, 0);
+    }
+}
+
+@keyframes glitch-anim-2 {
+    0% {
+        clip: rect(20px, 9999px, 80px, 0);
+    }
+
+    5% {
+        clip: rect(90px, 9999px, 10px, 0);
+    }
+
+    10% {
+        clip: rect(50px, 9999px, 20px, 0);
+    }
+
+    15% {
+        clip: rect(10px, 9999px, 90px, 0);
+    }
+
+    20% {
+        clip: rect(60px, 9999px, 40px, 0);
+    }
+
+    100% {
+        clip: rect(30px, 9999px, 70px, 0);
+    }
+}
+
+/* Custom Grids */
+.key-figures-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+    .key-figures-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Watermarks */
+.watermark-huge {
+    position: absolute;
+    font-size: 20vw;
+    font-family: 'Cinzel', serif;
+    color: rgba(255, 255, 255, 0.01);
+    z-index: 0;
+    pointer-events: none;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+/* Custom scrollbar for HUD sections */
+.hud-section::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.hud-section::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.hud-section::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.hud-section::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* ============================================= */
+/* INFINITE ANIMATIONS - MAKE EVERYTHING DYNAMIC */
+/* ============================================= */
+
+/* Floating Animation */
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes floatSlow {
+
+    0%,
+    100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+
+    50% {
+        transform: translateY(-15px) rotate(1deg);
+    }
+}
+
+@keyframes floatReverse {
+
+    0%,
+    100% {
+        transform: translateY(-10px);
+    }
+
+    50% {
+        transform: translateY(0px);
+    }
+}
+
+/* Pulsing Animations */
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: scale(1.02);
+    }
+}
+
+@keyframes pulseGlow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.2), 0 0 50px rgba(255, 255, 255, 0.1);
+    }
+}
+
+@keyframes pulseBorder {
+
+    0%,
+    100% {
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    50% {
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+}
+
+/* Shimmer Effect */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+@keyframes shimmerGradient {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Rotation Animations */
+@keyframes rotateSlow {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes rotateReverse {
+    from {
+        transform: rotate(360deg);
+    }
+
+    to {
+        transform: rotate(0deg);
+    }
+}
+
+@keyframes wobble {
+
+    0%,
+    100% {
+        transform: rotate(-1deg);
+    }
+
+    50% {
+        transform: rotate(1deg);
+    }
+}
+
+/* Scale Animations */
+@keyframes breathe {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.03);
+    }
+}
+
+@keyframes heartbeat {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    25% {
+        transform: scale(1.05);
+    }
+
+    50% {
+        transform: scale(1);
+    }
+
+    75% {
+        transform: scale(1.03);
+    }
+}
+
+/* Slide Animations */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Fade Animations */
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes fadeInBlur {
+    from {
+        opacity: 0;
+        filter: blur(10px);
+    }
+
+    to {
+        opacity: 1;
+        filter: blur(0);
+    }
+}
+
+/* Gradient Animation for Text */
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Border Animation */
+@keyframes borderDance {
+
+    0%,
+    100% {
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    25% {
+        border-color: rgba(255, 150, 50, 0.3);
+    }
+
+    50% {
+        border-color: rgba(100, 200, 255, 0.3);
+    }
+
+    75% {
+        border-color: rgba(200, 100, 255, 0.3);
+    }
+}
+
+/* Data Bar Fill Animation */
+@keyframes dataBarPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+@keyframes dataBarGlow {
+
+    0%,
+    100% {
+        filter: brightness(1);
+    }
+
+    50% {
+        filter: brightness(1.3);
+    }
+}
+
+/* Particle Animation */
+@keyframes particleDrift {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(100px, -100px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Wave Animation */
+@keyframes wave {
+
+    0%,
+    100% {
+        transform: translateY(0) scaleY(1);
+    }
+
+    50% {
+        transform: translateY(-5px) scaleY(1.05);
+    }
+}
+
+/* Ring Pulse Animation */
+@keyframes ringPulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.5;
+    }
+
+    100% {
+        transform: scale(1.2);
+        opacity: 0;
+    }
+}
+
+/* Text Flicker */
+@keyframes textFlicker {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    92% {
+        opacity: 1;
+    }
+
+    93% {
+        opacity: 0.8;
+    }
+
+    94% {
+        opacity: 1;
+    }
+
+    96% {
+        opacity: 0.9;
+    }
+
+    97% {
+        opacity: 1;
+    }
+}
+
+/* Typing Cursor */
+@keyframes blink {
+
+    0%,
+    50% {
+        border-color: transparent;
+    }
+
+    51%,
+    100% {
+        border-color: white;
+    }
+}
+
+/* ============================================= */
+/* OPTIMIZED ANIMATIONS - GPU ACCELERATED */
+/* ============================================= */
+
+/* GPU Acceleration for animated elements */
+.glass-card,
+.timeline-card,
+.equation-box,
+[data-lucide] {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Glass Cards - HOVER ONLY animations (saves CPU) */
+.glass-card {
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.4s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3),
+        0 0 30px rgba(255, 255, 255, 0.1);
+}
+
+/* Timeline Cards - Hover animation only */
+.timeline-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.timeline-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+}
+
+.timeline-card::before {
+    transition: transform 0.3s ease;
+}
+
+.timeline-card:hover::before {
+    transform: scale(1.3);
+}
+
+/* Data Bars - No infinite animation, just transition */
+.data-bar-fill {
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Equation Box - Hover only */
+.equation-box {
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.equation-box:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+/* Key Figures - Hover animation */
+.key-figures-grid>div {
+    transition: transform 0.3s ease;
+}
+
+.key-figures-grid>div:hover {
+    transform: translateY(-5px);
+}
+
+/* Deep Dive Accordions - Transition only */
+details.deep-dive {
+    transition: border-color 0.3s ease;
+}
+
+details.deep-dive:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Section Headers - Static gradient, shimmer on hover only */
+.hud-section h2 {
+    background: linear-gradient(90deg, #fff, #a1a1aa, #fff);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    transition: background-position 0.5s ease;
+}
+
+.hud-section h2:hover {
+    background-position: 100% 0;
+}
+
+/* Badge/Tag - Hover only */
+.inline-flex.items-center.gap-2 {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.inline-flex.items-center.gap-2:hover {
+    transform: translateY(-2px);
+}
+
+/* Depth Indicator - No constant animation */
+.depth-progress {
+    transition: all 0.3s ease;
+}
+
+.depth-marker {
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.depth-marker.active {
+    transform: scale(1.2);
+}
+
+/* Nav Logo - Slow rotation only (one animation is ok) */
+.nav-blur .rounded-full.bg-gradient-to-br {
+    animation: rotateSlow 30s linear infinite;
+}
+
+/* Hero Title - ONE subtle animation */
+#hero h1 .text-silver-gradient {
+    background: linear-gradient(90deg, #fff, #e4e4e7, #a1a1aa, #e4e4e7, #fff);
+    background-size: 200% auto;
+    animation: shimmer 8s linear infinite;
+}
+
+/* Status Badge - Keep pulse but slower */
+.animate-pulse {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Images - Hover scale only, no constant animation */
+.glass-card img {
+    transition: transform 0.5s ease;
+}
+
+.glass-card:hover img {
+    transform: scale(1.05);
+}
+
+/* Singularity dots - Simple pulse */
+.w-1.h-1.bg-white,
+.w-1.h-1.bg-red-500 {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* Ring element - Simple border transition */
+.w-8.h-2.border.border-white {
+    transition: border-color 0.3s ease;
+}
+
+/* Section cards - Hover transitions */
+#thermodynamics .glass-card,
+#frontier .glass-card {
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+#thermodynamics .glass-card:hover,
+#frontier .glass-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Evidence images - Hover only */
+#evidence .group img,
+#evidence .grid .group img {
+    transition: transform 0.5s ease;
+}
+
+#evidence .group:hover img {
+    transform: scale(1.05);
+}
+
+/* Icons - No constant animation, hover only */
+[data-lucide] {
+    transition: transform 0.2s ease;
+}
+
+[data-lucide]:hover {
+    transform: scale(1.1);
+}
+
+/* Quote boxes - Transition only */
+.font-serif.italic {
+    transition: opacity 0.5s ease;
+}
+
+/* Border dividers - No animation */
+.border-b.border-white\/10,
+.border-t.border-white\/5 {
+    transition: border-color 0.3s ease;
+}
+
+/* Marquee - Only ONE moving element */
+.fixed.bottom-0 .flex.w-max {
+    animation: scroll 40s linear infinite;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Additional dynamic effects */
+
+/* Horizontal Rule Shimmer */
+hr,
+.h-px {
+    animation: shimmer 4s linear infinite;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent, rgba(255, 255, 255, 0.2), transparent);
+    background-size: 200% 100%;
+}
+
+/* Text Labels Subtle Animation */
+.text-xs.text-zinc-500.uppercase {
+    animation: textFlicker 20s linear infinite;
+}
+
+/* Hero Button Pulsing */
+#hero-buttons>div {
+    animation: breathe 4s ease-in-out infinite, pulseGlow 3s ease-in-out infinite;
+}
+
+/* History Section Specific */
+#history .grid>div {
+    animation: slideInUp 0.8s ease-out backwards;
+}
+
+#history .grid>div:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+#history .grid>div:nth-child(2) {
+    animation-delay: 0.3s;
+}
+
+/* Formation Section Cards */
+#formation .grid>div {
+    animation: float 6s ease-in-out infinite;
+}
+
+/* Rotating accretion disk visual in singularity cards */
+#anatomy .bg-black .rounded-full,
+#anatomy .bg-black .border {
+    animation: rotateSlow 6s linear infinite;
+}
+
+/* ============================================= */
+/* MOBILE & TOUCH DEVICE OPTIMIZATIONS */
+/* ============================================= */
+
+/* Mobile Menu Open State */
+#mobile-menu.open {
+    transform: translateX(0);
+}
+
+/* Depth Indicator Mobile Adjustments */
+@media (max-width: 768px) {
+    .depth-indicator {
+        right: 0.5rem;
+        transform: translateY(-50%) scale(0.75);
+    }
+
+    .depth-markers {
+        display: none;
+    }
+
+    .depth-track {
+        height: 120px;
+    }
+
+    .depth-label {
+        font-size: 0.5rem;
+    }
+
+    /* Scroll hint adjustments */
+    .scroll-hint {
+        bottom: 4rem;
+    }
+
+    .scroll-hint-text {
+        font-size: 0.6rem;
+    }
+
+    /* Glass cards - larger touch targets */
+    .glass-card {
+        min-height: 60px;
+    }
+
+    /* Timeline cards touch-friendly */
+    .timeline-card {
+        min-width: 260px;
+        padding: 1.25rem;
+    }
+
+    /* Hero text sizing */
+    #hero h1 {
+        font-size: 4rem !important;
+    }
+
+    /* Nav adjustments */
+    .nav-blur {
+        padding: 0 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .depth-indicator {
+        right: 0.25rem;
+        transform: translateY(-50%) scale(0.6);
+    }
+
+    #hero h1 {
+        font-size: 3rem !important;
+    }
+
+    .hud-section .hud-content {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+
+    /* Disable hover-only effects on touch devices */
+    .glass-card:hover {
+        transform: none;
+    }
+
+    /* Make touch targets larger */
+    .depth-marker {
+        padding: 0.5rem;
+        font-size: 1rem;
+    }
+
+    .timeline-nav-btn {
+        width: 48px;
+        height: 48px;
+    }
+
+    /* Enable active states instead of hover */
+    .glass-card:active {
+        transform: scale(0.98);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .timeline-card:active {
+        transform: translateY(-3px);
+    }
+}
+
+/* Horizontal timeline touch scroll indicator */
+.horizontal-timeline-container {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar on mobile but keep functionality */
+@media (max-width: 768px) {
+    .horizontal-timeline-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    .horizontal-timeline-container {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}
+
+/* ============================================= */
+/* MOBILE PERFORMANCE MODE - RUTHLESS EFFICIENCY */
+/* ============================================= */
+/* State B: Targets stable 60 FPS on mobile devices */
+
+@media (max-width: 768px),
+(hover: none) and (pointer: coarse) {
+
+    /* CRITICAL: Kill backdrop-filter blur - GPU destroyer */
+    .glass-card {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: rgba(15, 15, 15, 0.95) !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .nav-blur {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: rgba(5, 5, 5, 0.98) !important;
+    }
+
+    /* Kill expensive text shadows and filters */
+    .hero-text-main {
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
+        -webkit-text-stroke: none !important;
+        filter: none !important;
+    }
+
+    .hero-text-main.text-silver-gradient {
+        animation: none !important;
+        background: #ffffff !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        filter: none !important;
+    }
+
+    /* Disable ALL shimmer/gradient animations */
+    .hud-section h2,
+    .text-silver-gradient,
+    hr,
+    .h-px {
+        animation: none !important;
+    }
+
+    /* Kill floating animations - save CPU cycles */
+    #formation .grid>div,
+    #history .grid>div {
+        animation: none !important;
+    }
+
+    /* Disable glitch effects entirely */
+    .glitch-text::before,
+    .glitch-text::after {
+        display: none !important;
+    }
+
+    /* Simplify hero backdrop */
+    #hero .hud-content>div::before {
+        display: none !important;
+    }
+
+    /* Reduce vignette complexity */
+    .tunnel-vignette {
+        background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.6) 100%) !important;
+    }
+
+    /* Hide speed lines - pure visual fluff */
+    .speed-lines {
+        display: none !important;
+    }
+
+    /* Simplify data bars */
+    .data-bar-fill::after {
+        display: none !important;
+    }
+
+    /* Kill watermarks - invisible anyway on mobile */
+    .watermark-huge {
+        display: none !important;
+    }
+
+    /* Reduce hero button pulse intensity */
+    #hero-buttons>div {
+        animation: none !important;
+    }
+
+    /* Simplify equation boxes */
+    .equation-box {
+        box-shadow: none !important;
+    }
+
+    /* Kill card spotlight/tilt effects */
+    .glass-card::before {
+        display: none !important;
+    }
+
+    /* Reduce transition complexity */
+    .glass-card,
+    .timeline-card {
+        transition: none !important;
+    }
+
+    /* Kill accretion disk rotation in anatomy */
+    #anatomy .bg-black .rounded-full,
+    #anatomy .bg-black .border {
+        animation: none !important;
+    }
+
+    /* Disable pulse on status badges */
+    .animate-pulse {
+        animation: none !important;
+    }
+
+    /* Kill text flicker */
+    .text-xs.text-zinc-500.uppercase {
+        animation: none !important;
+    }
+
+    /* Simplify hero image rendering */
+    .hero-bg-image {
+        filter: none !important;
+    }
+
+    /* Reduce depth indicator complexity */
+    .depth-progress {
+        background: #ffffff !important;
+        transition: height 0.2s linear !important;
+    }
+
+    /* Simplify scroll hint */
+    .scroll-hint-arrow {
+        animation: none !important;
+    }
+}
+
+/* Ultra-aggressive mode for very low-end devices */
+@media (max-width: 480px) {
+
+    /* Further reduce glass opacity for performance */
+    .glass-card {
+        background: rgba(10, 10, 10, 0.98) !important;
+    }
+
+    /* Hide hero background image entirely on very small screens */
+    .hero-bg-container {
+        opacity: 0.3 !important;
+    }
+
+    /* Simplify border animations */
+    .pulseBorder,
+    .borderDance {
+        animation: none !important;
+    }
+}
