@@ -3583,6 +3583,7 @@
             const speedLinesEl = document.getElementById('speedLines');
             let frameCount = 0;
             let lastVelocity = 0;
+            let lastHUDDepth = -1000;
 
             // Animation loop (OPTIMIZED)
             function animateTunnel() {
@@ -3692,6 +3693,14 @@
                     lastVelocity = scrollVelocity;
                 }
 
+                // HUD UPDATES (Decoupled from Scroll)
+                // Only update DOM if depth changed significantly (> 1 unit)
+                if (Math.abs(currentDepth - lastHUDDepth) > 1) {
+                    updateHUD(currentDepth);
+                    updateDepthIndicator(currentDepth);
+                    lastHUDDepth = currentDepth;
+                }
+
                 tunnelRenderer.render(tunnelScene, tunnelCamera);
             }
             animateTunnel();
@@ -3751,11 +3760,7 @@
             // Update target depth based on scroll
             targetDepth = Math.max(0, Math.min(maxDepth, targetDepth + e.deltaY * depthSensitivity / 10));
 
-            // Update HUD sections
-            updateHUD(currentDepth);
-
-            // Update depth indicator
-            updateDepthIndicator(currentDepth);
+            // HUD updates are now handled in the animation loop
 
         }, { passive: false });
 
@@ -3805,9 +3810,7 @@
             targetDepth = Math.max(0, Math.min(maxDepth, targetDepth + deltaY * 5.0));
             touchStartY = touchY;
 
-            // Update HUD
-            updateHUD(currentDepth);
-            updateDepthIndicator(currentDepth);
+            // HUD updates are now handled in the animation loop
 
         }, { passive: false });
 
@@ -3822,52 +3825,81 @@
         }, { passive: true });
 
         // ==========================================
-        // 4. HUD OVERLAY CONTROLLER
+        // 4. HUD OVERLAY CONTROLLER (OPTIMIZED)
         // ==========================================
+
+        // Cache DOM elements to avoid querySelector in loop
+        const sectionCache = {};
+        let depthMarkersCache = null;
+
         function updateHUD(depth) {
+            // Populate cache on first run
+            if (Object.keys(sectionCache).length === 0) {
+                sections.forEach(s => {
+                    sectionCache[s.id] = document.getElementById(s.id);
+                });
+                depthMarkersCache = document.querySelectorAll('.depth-marker');
+            }
+
             sections.forEach(s => {
-                const el = document.getElementById(s.id);
+                const el = sectionCache[s.id];
                 if (!el) return;
 
                 const fadeRange = 200; // Depth units for fade in/out
 
-                if (depth >= s.start - fadeRange && depth <= s.end + fadeRange) {
-                    // Calculate opacity based on position within section
-                    let opacity = 1;
-
-                    if (depth < s.start) {
-                        // Fading in
-                        opacity = 1 - (s.start - depth) / fadeRange;
-                    } else if (depth > s.end) {
-                        // Fading out
-                        opacity = 1 - (depth - s.end) / fadeRange;
-                    }
-
-                    opacity = Math.max(0, Math.min(1, opacity));
-
-                    if (opacity > 0) {
-                        el.classList.add('active');
-                        el.style.opacity = opacity;
-                    } else {
+                // Optimization: fast check if way out of range (including fade)
+                if (depth < s.start - fadeRange || depth > s.end + fadeRange) {
+                    if (el.style.opacity !== '0') {
                         el.classList.remove('active');
                         el.style.opacity = 0;
                     }
+                    return;
+                }
+
+                // Calculate opacity based on position within section
+                let opacity = 1;
+
+                if (depth < s.start) {
+                    // Fading in
+                    opacity = 1 - (s.start - depth) / fadeRange;
+                } else if (depth > s.end) {
+                    // Fading out
+                    opacity = 1 - (depth - s.end) / fadeRange;
+                }
+
+                opacity = Math.max(0, Math.min(1, opacity));
+
+                if (opacity > 0) {
+                    // Avoid DOM write if already correct (simple check)
+                    // Note: .style.opacity returns string, usually sufficient
+                    if (el.style.opacity != opacity) {
+                        el.classList.add('active');
+                        el.style.opacity = opacity;
+                    }
                 } else {
-                    el.classList.remove('active');
-                    el.style.opacity = 0;
+                    if (el.style.opacity !== '0') {
+                        el.classList.remove('active');
+                        el.style.opacity = 0;
+                    }
                 }
             });
 
             // Update depth markers
-            document.querySelectorAll('.depth-marker').forEach(marker => {
-                const sectionId = marker.dataset.section;
-                const section = sections.find(s => s.id === sectionId);
-                if (section && depth >= section.start && depth <= section.end) {
-                    marker.classList.add('active');
-                } else {
-                    marker.classList.remove('active');
-                }
-            });
+            if (depthMarkersCache) {
+                depthMarkersCache.forEach(marker => {
+                    const sectionId = marker.dataset.section;
+                    const section = sections.find(s => s.id === sectionId);
+
+                    const isActive = section && depth >= section.start && depth <= section.end;
+
+                    // Only touch DOM classList if changed
+                    if (isActive && !marker.classList.contains('active')) {
+                        marker.classList.add('active');
+                    } else if (!isActive && marker.classList.contains('active')) {
+                        marker.classList.remove('active');
+                    }
+                });
+            }
         }
 
         function updateDepthIndicator(depth) {
