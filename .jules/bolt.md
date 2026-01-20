@@ -1,0 +1,3 @@
+## 2025-01-20 - [Decoupled Scroll Rendering]
+**Learning:** In scroll-driven 3D experiences, updating DOM elements directly in the `wheel` event handler causes layout thrashing and desynchronization. If the camera movement is smoothed (interpolated) in a `requestAnimationFrame` loop, the UI updates must also happen in that loop, not in the event handler. Otherwise, the UI stops updating when the user stops scrolling, even if the camera is still "flying" to its target.
+**Action:** Always decouple input processing (setting target state) from rendering (updating DOM/Canvas). Move DOM updates to the animation loop and use dirty-checking (e.g., `if (current !== last)`) to minimize layout costs.
