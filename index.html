@@ -3284,6 +3284,17 @@
             { id: 'frontier', start: 9200, end: 10000 }
         ];
 
+        // OPTIMIZATION: Cache DOM elements
+        // Initialize cache after DOM load (or ensuring script is at end of body)
+        sections.forEach(s => s.el = document.getElementById(s.id));
+
+        const depthProgressEl = document.getElementById('depthProgress');
+        const depthMarkersCache = Array.from(document.querySelectorAll('.depth-marker')).map(marker => ({
+            el: marker,
+            sectionId: marker.dataset.section,
+            section: sections.find(s => s.id === marker.dataset.section)
+        }));
+
         // ==========================================
         // 0. UTILS: SCRAMBLE TEXT & MAGNETIC
         // ==========================================
@@ -3583,6 +3594,7 @@
             const speedLinesEl = document.getElementById('speedLines');
             let frameCount = 0;
             let lastVelocity = 0;
+            let lastHUDDepth = -1; // For dirty checking HUD updates
 
             // Animation loop (OPTIMIZED)
             function animateTunnel() {
@@ -3591,6 +3603,15 @@
 
                 // Smooth depth interpolation
                 currentDepth += (targetDepth - currentDepth) * 0.08;
+
+                // OPTIMIZATION: Update HUD only when depth changes significantly
+                // This decouples HUD updates from the scroll event and moves it to the animation loop
+                // Resulting in smoother transitions and less work on the main thread during scroll
+                if (Math.abs(currentDepth - lastHUDDepth) > 0.1) {
+                    updateHUD(currentDepth);
+                    updateDepthIndicator(currentDepth);
+                    lastHUDDepth = currentDepth;
+                }
 
                 // Update camera Z based on depth
                 const normalizedDepth = currentDepth / maxDepth;
@@ -3751,11 +3772,8 @@
             // Update target depth based on scroll
             targetDepth = Math.max(0, Math.min(maxDepth, targetDepth + e.deltaY * depthSensitivity / 10));
 
-            // Update HUD sections
-            updateHUD(currentDepth);
-
-            // Update depth indicator
-            updateDepthIndicator(currentDepth);
+            // OPTIMIZATION: Removed direct HUD updates from scroll handler
+            // HUD is now updated in the animateTunnel loop for better performance
 
         }, { passive: false });
 
@@ -3805,9 +3823,7 @@
             targetDepth = Math.max(0, Math.min(maxDepth, targetDepth + deltaY * 5.0));
             touchStartY = touchY;
 
-            // Update HUD
-            updateHUD(currentDepth);
-            updateDepthIndicator(currentDepth);
+            // OPTIMIZATION: HUD updates moved to animation loop
 
         }, { passive: false });
 
@@ -3825,8 +3841,9 @@
         // 4. HUD OVERLAY CONTROLLER
         // ==========================================
         function updateHUD(depth) {
+            // OPTIMIZATION: Use cached DOM elements to avoid querySelector/getElementById in loop
             sections.forEach(s => {
-                const el = document.getElementById(s.id);
+                const el = s.el;
                 if (!el) return;
 
                 const fadeRange = 200; // Depth units for fade in/out
@@ -3858,23 +3875,21 @@
                 }
             });
 
-            // Update depth markers
-            document.querySelectorAll('.depth-marker').forEach(marker => {
-                const sectionId = marker.dataset.section;
-                const section = sections.find(s => s.id === sectionId);
-                if (section && depth >= section.start && depth <= section.end) {
-                    marker.classList.add('active');
+            // Update depth markers using cache
+            depthMarkersCache.forEach(item => {
+                if (item.section && depth >= item.section.start && depth <= item.section.end) {
+                    item.el.classList.add('active');
                 } else {
-                    marker.classList.remove('active');
+                    item.el.classList.remove('active');
                 }
             });
         }
 
         function updateDepthIndicator(depth) {
-            const progress = document.getElementById('depthProgress');
-            if (progress) {
+            // OPTIMIZATION: Use cached element
+            if (depthProgressEl) {
                 const percentage = (depth / maxDepth) * 100;
-                progress.style.height = percentage + '%';
+                depthProgressEl.style.height = percentage + '%';
             }
         }
 
