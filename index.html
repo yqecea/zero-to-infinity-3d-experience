@@ -161,9 +161,12 @@
             bottom: 0;
             left: 0;
             width: 100%;
+            height: 100%;
             background: linear-gradient(to top, #000, #a1a1aa, #fff);
             border-radius: 2px;
-            transition: height 0.1s ease-out;
+            transform-origin: bottom;
+            transform: scaleY(0);
+            will-change: transform;
         }
 
         .depth-label {
@@ -1241,10 +1244,6 @@
         }
 
         /* Depth Indicator - No constant animation */
-        .depth-progress {
-            transition: all 0.3s ease;
-        }
-
         .depth-marker {
             transition: transform 0.2s ease, opacity 0.2s ease;
         }
@@ -1643,7 +1642,6 @@
             /* Reduce depth indicator complexity */
             .depth-progress {
                 background: #ffffff !important;
-                transition: height 0.2s linear !important;
             }
 
             /* Simplify scroll hint */
@@ -1689,7 +1687,7 @@
     <div class="depth-indicator">
         <span class="depth-label">Depth</span>
         <div class="depth-track">
-            <div class="depth-progress" id="depthProgress" style="height: 0%"></div>
+            <div class="depth-progress" id="depthProgress"></div>
         </div>
         <div class="depth-markers">
             <span class="depth-marker active" data-section="hero">●</span>
@@ -3583,6 +3581,7 @@
             const speedLinesEl = document.getElementById('speedLines');
             let frameCount = 0;
             let lastVelocity = 0;
+            let lastRenderedDepth = -1;
 
             // Animation loop (OPTIMIZED)
             function animateTunnel() {
@@ -3692,6 +3691,14 @@
                     lastVelocity = scrollVelocity;
                 }
 
+                // OPTIMIZATION: Sync UI updates with render loop (decoupled from scroll events)
+                // Dirty check: Only update DOM when depth changes significantly
+                if (Math.abs(currentDepth - lastRenderedDepth) > 0.1) {
+                    updateHUD(currentDepth);
+                    updateDepthIndicator(currentDepth);
+                    lastRenderedDepth = currentDepth;
+                }
+
                 tunnelRenderer.render(tunnelScene, tunnelCamera);
             }
             animateTunnel();
@@ -3751,12 +3758,6 @@
             // Update target depth based on scroll
             targetDepth = Math.max(0, Math.min(maxDepth, targetDepth + e.deltaY * depthSensitivity / 10));
 
-            // Update HUD sections
-            updateHUD(currentDepth);
-
-            // Update depth indicator
-            updateDepthIndicator(currentDepth);
-
         }, { passive: false });
 
         // ==========================================
@@ -3804,10 +3805,6 @@
             // Update depth - HYPER SENSITIVITY for mobile (5x multiplier)
             targetDepth = Math.max(0, Math.min(maxDepth, targetDepth + deltaY * 5.0));
             touchStartY = touchY;
-
-            // Update HUD
-            updateHUD(currentDepth);
-            updateDepthIndicator(currentDepth);
 
         }, { passive: false });
 
@@ -3873,8 +3870,8 @@
         function updateDepthIndicator(depth) {
             const progress = document.getElementById('depthProgress');
             if (progress) {
-                const percentage = (depth / maxDepth) * 100;
-                progress.style.height = percentage + '%';
+                const percentage = (depth / maxDepth);
+                progress.style.transform = `scaleY(${percentage})`;
             }
         }
 
